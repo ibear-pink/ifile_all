@@ -1,0 +1,30 @@
+
+######################  判断本机上是否有SDFS ###############################
+FILE_H=""
+FILE_L=""
+FILE_C="ifile.cpp ifile_system.cpp"
+FILE_O="ifile.o ifile_system.o"
+
+if [ -d $SDFS_HOME/include ] ; then
+FILE_H="$FILE_H -I${SDFS_HOME}/include -I${DSC_PATH}/include"
+FILE_L="$FILE_L -L${SDFS_HOME}/lib -lsdfs -L${DSC_PATH}/lib/ -ldsc"
+FILE_C="$FILE_C ifile_sdfs.cpp"
+FILE_O="$FILE_O ifile_sdfs.o"
+fi
+
+CCS="g++ -fPIC -m64 -g -O2 -fpermissive"
+INCLUDE="-I../include ${FILE_H}"
+
+IFLAGS="-DSS_64BIT_SERVER -D_REENTRANT -D_DEBUG_INFO_"
+
+#######  编译  #########################
+echo "Compiling the  *.cpp $<"
+${CCS} -c ${IFLAGS} ${FILE_C} ${INCLUDE}
+
+#######  C动态库 ########################
+echo "Compiling the  C动态库 $<"
+rm -f libifile.so
+rm -f ../lib/libifile.so
+g++ -shared -o libifile.so ${FILE_O}
+
+mv libifile.so ../lib
