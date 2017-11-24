@@ -6,32 +6,40 @@
 
 #include "ifile_sdfs.h"
 
-SDFS_GDF_FILE::SDFS_GDF_FILE (void)
+int ifile_sdfs_init(SDFS *ssp)
 {
 	char err_msg[256];
-	
-	memset (m_FileName, 0, sizeof(m_FileName));
-	
-	memset (m_FilePath, 0, sizeof(m_FilePath));
-	
-	memset (m_FullFileName, 0, sizeof(m_FullFileName));
-	
-	memset( &sp, 0, sizeof(SDFS));
-	
-	m_Fp = NULL;
-	
-	if (0 != sinit ("h", &sp, err_msg))
+	memset(ssp, 0, sizeof(SDFS));
+	if (0 != sinit ("h", ssp, err_msg))
 	{
 		printf("SDFS start failed[%s]...\n",err_msg);
-		sdestory( &sp );
-		return;
-	}	
+		sdestory(ssp);
+		return -1;
+	}
+	return 0;
 }
 
-SDFS_GDF_FILE::SDFS_GDF_FILE (const char *fullFileName)
+void ifile_sdfs_destory(SDFS *ssp)
 {
-	char err_msg[256];
+	sdestory(ssp);
+}
+
+
+SDFS_GDF_FILE::SDFS_GDF_FILE (SDFS *ssp)
+{
+	memset (m_FileName, 0, sizeof(m_FileName));
 	
+	memset (m_FilePath, 0, sizeof(m_FilePath));
+	
+	memset (m_FullFileName, 0, sizeof(m_FullFileName));
+	
+	m_Fp = NULL;
+	
+	memcpy( &sp, ssp, sizeof(SDFS));
+}
+
+SDFS_GDF_FILE::SDFS_GDF_FILE (SDFS *ssp,const char *fullFileName)
+{
 	memset (m_FileName, 0, sizeof(m_FileName));
 	
 	memset (m_FilePath, 0, sizeof(m_FilePath));
@@ -40,7 +48,6 @@ SDFS_GDF_FILE::SDFS_GDF_FILE (const char *fullFileName)
 	
 	m_Fp = NULL;
 
-	memset( &sp, 0, sizeof(SDFS));
 	strcpy (m_FullFileName, fullFileName);
 	int DirLen = strlen(fullFileName);
 	
@@ -54,18 +61,11 @@ SDFS_GDF_FILE::SDFS_GDF_FILE (const char *fullFileName)
 		}
 	}	
 	m_StartTime = time(NULL);
-	if (0 != sinit ("h", &sp, err_msg))
-	{
-		printf("SDFS start failed[%s]...\n",err_msg);
-		sdestory( &sp );
-		return;
-	}
+	memcpy( &sp, ssp, sizeof(SDFS));
 }
 
-SDFS_GDF_FILE::SDFS_GDF_FILE (const char *szFilePath, const char *szFileName)
+SDFS_GDF_FILE::SDFS_GDF_FILE (SDFS *ssp, const char *szFilePath, const char *szFileName)
 {
-	char err_msg[256];
-	
 	memset (m_FileName, 0, sizeof(m_FileName));
 	
 	memset (m_FilePath, 0, sizeof(m_FilePath));
@@ -73,8 +73,6 @@ SDFS_GDF_FILE::SDFS_GDF_FILE (const char *szFilePath, const char *szFileName)
 	memset (m_FullFileName, 0, sizeof(m_FullFileName));
 	
 	m_Fp = NULL;
-	
-	memset( &sp, 0, sizeof(SDFS));
 	
 	strcpy (m_FileName, szFileName);
 	
@@ -95,13 +93,7 @@ SDFS_GDF_FILE::SDFS_GDF_FILE (const char *szFilePath, const char *szFileName)
 	}
 	
 	m_StartTime = time(NULL);
-	
-	if (0 != sinit ("h", &sp, err_msg))
-	{
-		printf("SDFS start failed[%s]...\n",err_msg);
-		sdestory( &sp );
-		return;
-	}
+	memcpy( &sp, ssp, sizeof(SDFS));
 }
 
 SDFS_GDF_FILE::~SDFS_GDF_FILE (void)
@@ -110,7 +102,6 @@ SDFS_GDF_FILE::~SDFS_GDF_FILE (void)
 	{
 		this->Close ();
 	}
-	sdestory( &sp);
 }
 
 int SDFS_GDF_FILE::Open (const char *szMode)
@@ -123,7 +114,6 @@ int SDFS_GDF_FILE::Open (const char *szMode)
 	{
 		printf ("FILE[%s]LINE[%d]ERR_MSG[File(%s) Pointer(%s) Is Null.]\n", __FILE__, __LINE__,m_FullFileName,szMode);
 		printf ("cp:szInfile sopen failed... errstr[%s] errno[%d]\n",serrstr2(&sp),serrno2(&sp));
-		sdestory( &sp );
 		return -1;
 	}
 	
@@ -215,10 +205,19 @@ int SDFS_GDF_FILE::getFileList(char *indir)
 
 int SDFS_GDF_FILE::Close (void)
 {
+	if ((this->mFileList).size()>0)
+	{
+		for(vector<stFileInfo *>::iterator it = (this->mFileList).begin();it!=(this->mFileList).end();it++)
+		{
+			stFileInfo *file = *it;
+			delete file;
+			file = NULL;
+		}
+		(this->mFileList).clear();
+	}
 	if (0 != sclose (m_Fp))
 	{
 		printf ("cp:szInfile sopen failed... errstr[%s] errno[%d]\n",serrstr2(&sp),serrno2(&sp));
-		sdestory( &sp);
 		return -1;
 	}
 	
@@ -234,7 +233,6 @@ int SDFS_GDF_FILE::Rename (const char *destFile)
 	{
 		if (0 != srename (m_FullFileName, destFile, &sp))
 		{
-			sdestory( &sp );
 			return -1;
 		}
 	}
@@ -263,7 +261,6 @@ int SDFS_GDF_FILE::Remove (void)
 {	
 	if (0 != sremove (m_FullFileName, &sp))
 	{
-		sdestory( &sp );
 		return -1;
 	}
 	
@@ -288,13 +285,11 @@ bool SDFS_GDF_FILE::IsFileExist ()
 
 	if ((sstat(m_FullFileName, &statMode, &sp) == 0))
 	{
-		sdestory( &sp );
 		return false;
 	}
 
 	if (saccess(m_FullFileName, R_OK|W_OK, &sp) < 0)
 	{
-		sdestory( &sp );
 		return false;
 	}
 
@@ -305,7 +300,6 @@ bool SDFS_GDF_FILE::IsFilePointerNull (void)
 {
 	if (NULL == m_Fp)
 	{
-		sdestory( &sp );
 		return false;
 	}
 	else

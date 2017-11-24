@@ -15,11 +15,11 @@ using namespace std;
 class SDFS_GDF_FILE : public GDF_FILE
 {
 public:
-	SDFS_GDF_FILE (void);
+	SDFS_GDF_FILE (SDFS *ssp);
 	
-	SDFS_GDF_FILE (const char *szFilePath, const char *szFileName);
+	SDFS_GDF_FILE (SDFS *ssp,const char *szFilePath, const char *szFileName);
 	
-	SDFS_GDF_FILE (const char *fullFileName);
+	SDFS_GDF_FILE (SDFS *ssp,const char *fullFileName);
 	
 	virtual ~SDFS_GDF_FILE (void);
 	
@@ -73,5 +73,8 @@ private:
 	SDFS sp;
 	
 };
+
+int ifile_sdfs_init(SDFS *ssp);
+void ifile_sdfs_destory(SDFS *ssp);
 
 #endif

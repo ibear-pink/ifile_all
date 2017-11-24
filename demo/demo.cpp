@@ -11,13 +11,16 @@ int main(int argc, const char * argv[])
 	char buff[1024];
 	char backupFile[1024] = {0};
 	//strcpy(backupFile,"/ocsapp/work/wangzhia/ibf/ilog_all/demo/runlog/demo_sdfs_STAT_20170524154520.log");
-	strcpy(backupFile,"/sdfslog/CLUSTER_Z00/NRC/tmp/demo_sdfs_STAT_20170524154520.log");
+	strcpy(backupFile,"/sdfslog/CLUSTER_C00/NRC/log/temp/demo_sdfs_STAT_20170524154520.log");
 	//strcpy(filepath,"/ocsapp/work/wangzhia/ibf/ilog_all/demo/temp");
 	//strcpy(filename,"demo_sdfs_STAT_20170524.log");
-	strcpy(filepath,"/sdfslog/CLUSTER_Z00/NRC/tmp");
+	strcpy(filepath,"/sdfslog/CLUSTER_C00/NRC/log/temp");
 	strcpy(filename,"demo.log");
+	SDFS sp;
+	if (0!=ifile_sdfs_init(&sp))
+		return -1;
 	//GDF_FILE *file = new SYSTEM_GDF_FILE(filepath,filename);
-	GDF_FILE *file = new SDFS_GDF_FILE(filepath,filename);
+	GDF_FILE *file = new SDFS_GDF_FILE(&sp,filepath,filename);
 	file->Open("a+");
 	
 	//file->Write(text,sizeof(text),1);
